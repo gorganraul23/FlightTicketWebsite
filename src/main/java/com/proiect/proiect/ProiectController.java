@@ -1,0 +1,376 @@
+package com.proiect.proiect;
+
+
+import com.itextpdf.text.DocumentException;
+import com.itextpdf.text.pdf.PdfDocument;
+import com.proiect.proiect.administrate.*;
+import com.proiect.proiect.defaultPersoana.PersoanaService;
+import com.proiect.proiect.model.*;
+import com.proiect.proiect.repositories.AeroportRepository;
+import com.proiect.proiect.repositories.PersoanaRepository;
+import com.proiect.proiect.repositories.ZborRepository;
+import com.proiect.proiect.ticket.ComputeTicket;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.*;
+
+import javax.activation.FileDataSource;
+import java.awt.*;
+import java.io.File;
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.sql.Time;
+import java.util.Date;
+import java.util.List;
+
+
+@Controller
+public class ProiectController {
+    @Autowired
+    private AeroportRepository aeroportRepository;
+
+    @Autowired
+    private ZborRepository zborRepository;
+
+    @Autowired
+    private PersoanaRepository persoanaRepository;
+
+    @Autowired
+    private PersoanaService persoanaService;
+
+    private CautareZborCreareBilet search;
+
+
+    private Invoker invoker = new Invoker();
+    private Operation operation = new Operation();
+    private InsertCommand insertCommand = new InsertCommand(operation);
+    private UpdateCommand updateCommand = new UpdateCommand(operation);
+    private DeleteCommand deleteCommand = new DeleteCommand(operation);
+
+    @GetMapping("")
+    public String viewHomePage( Model model) {
+        List<Zbor> zborList = (List<Zbor>) zborRepository.findAll();
+        model.addAttribute("listFlights", zborList);
+        return "index";
+    }
+
+    @GetMapping("/register")
+    public String showSingUpForm(Model model) {
+        model.addAttribute("persoana", new Persoana());
+        return "signup_form";
+    }
+
+    @PostMapping("/process_register")
+    public String processRegistration(Persoana persoana) {
+        /*BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+        String encodenPassword = encoder.encode(persoana.getParolaPersoana());
+        persoana.setParolaPersoana(encodenPassword);
+        persoanaRepository.save(persoana);*/
+
+        persoanaService.registerDefaultUser(persoana);
+
+        return "registration_success";
+    }
+
+    @GetMapping("/admin/list_users")
+    public String viewUserList(Model model) {
+        List<Persoana> listUsers = persoanaService.listAll();
+        model.addAttribute("listUsers", listUsers);
+
+        return "users";
+    }
+
+    @GetMapping("/login")
+    public String logInPage() {
+        return "login";
+    }
+
+    ///////////////////////////////////////principal admin
+    @GetMapping("/main_adm")
+    public String MainAdm() {
+        return "main_adm";
+    }
+
+    ///////////////////////////////////////////aeroport admin
+    @GetMapping("/airport_adm")
+    public String AirportAdm() {
+        return "adm_aeroport";
+    }
+
+    @GetMapping("/insert_airport")
+    public String showInsertForm(Model model) {
+        model.addAttribute("aeroport", new Aeroport());
+        return "insert_form";
+    }
+
+    @PostMapping("/process_insert")
+    public String processInsertAirport(Aeroport aeroport) {
+        invoker.setCommand(insertCommand);
+        invoker.executeCommand(aeroport, aeroportRepository);
+        return "operation_success";
+    }
+
+    @GetMapping("/delete_airport")
+    public String showDeleteForm(Model model) {
+        Integer id = 0;
+        model.addAttribute("id", id);
+        return "delete_form";
+    }
+
+    @RequestMapping(value = "/process_delete", method = RequestMethod.GET)
+    @PostMapping("/process_delete")
+    public String processDelete(Integer id) {
+        Aeroport aeroport = null;
+        invoker.setCommand(deleteCommand);
+        if (aeroportRepository.findById(id).isPresent()) {
+            aeroport = aeroportRepository.findById(id).get();
+            invoker.executeCommand(aeroport, aeroportRepository);
+        } else
+            return "operation_failed";
+        return "operation_success";
+    }
+
+    @GetMapping("/update_airport")
+    public String showUpdateForm(Model model) {
+        Integer id = 0;
+        String nume = null, oras = null, tara = null;
+        model.addAttribute("id", id);
+        model.addAttribute("nume", nume);
+        model.addAttribute("oras", oras);
+        model.addAttribute("tara", tara);
+        return "update_form";
+    }
+
+    @RequestMapping(value = "/process_update", method = RequestMethod.GET)
+    @PostMapping("/process_update")
+    public String processUpdate(Integer id, String nume, String oras, String tara) {
+        Aeroport aeroport = null;
+        invoker.setCommand(updateCommand);
+
+        if (aeroportRepository.findById(id).isPresent())
+            aeroport = aeroportRepository.findById(id).get();
+        else
+            return "operation_failed";
+
+        if (nume != null && !nume.isEmpty())
+            aeroport.setNumeAeroport(nume);
+        if (oras != null && !oras.isEmpty())
+            aeroport.setOrasAeroport(oras);
+        if (tara != null && !tara.isEmpty())
+            aeroport.setTaraAeroport(tara);
+
+        invoker.executeCommand(aeroport, aeroportRepository);
+        return "operation_success";
+    }
+
+
+    //////////////////////////////////////////zbor admin
+    @GetMapping("/zbor_adm")
+    public String ZborAdm() {
+        return "adm_zbor";
+    }
+
+    @GetMapping("/insert_flight")
+    public String showInsertFlightForm(Model model) {
+        model.addAttribute("zbor", new Zbor());
+        return "insert_zbor_form";
+    }
+
+    @PostMapping("/process_flight_insert")
+    public String processInsertFlight(Zbor zbor) {
+        invoker.setCommand(insertCommand);
+        invoker.executeCommand(zbor, zborRepository);
+        return "operation_success";
+    }
+
+    @GetMapping("/delete_flight")
+    public String showDeleteFlightForm(Model model) {
+        Integer id = 0;
+        model.addAttribute("id", id);
+        return "delete_flight_form";
+    }
+
+    @RequestMapping(value = "/process_flight_delete", method = RequestMethod.GET)
+    @PostMapping("/process_flight_delete")
+    public String processFlightDelete(Integer id) {
+        Zbor zbor = null;
+        invoker.setCommand(deleteCommand);
+        if (zborRepository.findById(id).isPresent()) {
+            zbor = zborRepository.findById(id).get();
+            invoker.executeCommand(zbor, zborRepository);
+        } else
+            return "operation_failed";
+        return "operation_success";
+    }
+
+    @GetMapping("/update_flight")
+    public String showUpdateFlightForm(Model model) {
+        Integer id = 0;
+        model.addAttribute("id", id);
+        model.addAttribute("ora_plecare", null);
+        model.addAttribute("ore", null);
+        model.addAttribute("minute", null);
+        model.addAttribute("pret", null);
+        model.addAttribute("companie", null);
+
+        return "update_flight_form";
+    }
+
+    @RequestMapping(value = "/process_update_flight", method = RequestMethod.GET)
+    @PostMapping("/process_update")
+    public String processFlightUpdate(Integer id, String ora_plecare, Integer ore, Integer minute,
+                                      Integer pret, String companie) {
+        Zbor zbor = null;
+        invoker.setCommand(updateCommand);
+
+        if (zborRepository.findById(id).isPresent())
+            zbor = zborRepository.findById(id).get();
+        else
+            return "operation_failed";
+
+        if (ora_plecare != null && !ora_plecare.isEmpty())
+            zbor.setOraPlecare(Time.valueOf(ora_plecare));
+        if (ore != null)
+            zbor.setDurataOre(ore);
+        if (minute != null)
+            zbor.setDurataMin(minute);
+        if (pret != null)
+            zbor.setPret(pret);
+        if (companie != null && !companie.isEmpty())
+            zbor.setCompanie(companie);
+
+        invoker.executeCommand(zbor, zborRepository);
+        return "operation_success";
+    }
+
+    @GetMapping("/list_airports")
+    public String viewAirportsList(Model model) {
+        List<Aeroport> aeroportList = (List<Aeroport>) aeroportRepository.findAll();
+        model.addAttribute("listAirports", aeroportList);
+        return "airports";
+    }
+
+    @GetMapping("/list_flights")
+    public String viewFlightsList(Model model) {
+        List<Zbor> zborList = (List<Zbor>) zborRepository.findAll();
+        model.addAttribute("listFlights", zborList);
+        return "flights";
+    }
+
+    @RequestMapping(value="/make_ticket", method = RequestMethod.POST)
+    @PostMapping("/make_ticket")
+    public String ticket(ZborItem zborItem, String dataString,String from, String to) throws DocumentException, IOException, URISyntaxException {
+        System.out.println(zborItem.toString());
+        //Zbor zbor = new Zbor(3, 3, 4, Time.valueOf("15:00:00"), 30, 2, 100, "Frontier Airlines");
+        Persoana persoana = new Persoana(5, "casda", "anap@gmail.com", "parola");
+        ComputeTicket.computeBill(new Bilet(zborItem, 1, persoana, dataString, from, to));
+        return "search";
+    }
+
+
+    public void ticket2(ZborItem zborItem, String dataString,String from, String to) throws DocumentException, IOException, URISyntaxException {
+        Persoana persoana = new Persoana(5, "Hai Odata", "anap@gmail.com", "parola");
+        ComputeTicket.computeBill(new Bilet(zborItem, 1, persoana, dataString, from, to));
+    }
+
+    @GetMapping("/search")
+    public String search() {
+        return "search";
+    }
+
+    @GetMapping("/open_ticket")
+    public String ticket() {
+        try {
+            if ((new File("E:\\My_Designs\\Intellij\\IS\\proiect\\ticket.pdf")).exists()) {
+                Process p = Runtime
+                        .getRuntime()
+                        .exec("rundll32 url.dll,FileProtocolHandler E:\\My_Designs\\Intellij\\IS\\proiect\\ticket.pdf");
+                p.waitFor();
+            } else {
+                System.out.println("File is not exists");
+            }
+        } catch (Exception ex) {
+            System.out.println(ex);
+        }
+        return "search";
+    }
+
+    @RequestMapping(value="/choose", method = RequestMethod.GET)
+    @GetMapping("/choose")
+    public String choose(ZborItem zborItem, String dataString, String from, String to) throws DocumentException, IOException, URISyntaxException {
+
+        ticket2(zborItem,dataString,from,to);
+        return "choose";
+    }
+
+    @GetMapping("/choose2")
+    public String choose2(@RequestParam String from, @RequestParam String to, @RequestParam String date,  Model model) throws DocumentException, IOException, URISyntaxException {
+        String mesaj;
+        ZborItem zborItem= new ZborComposite();
+        CautareZborCreareBilet search = new CautareZborCreareBilet(aeroportRepository);
+        try {
+            mesaj=search.findZborAStar(from, to).toString();
+
+            zborItem = search.findZborAStar(from, to);
+        } catch (Exception e) {
+            mesaj="Could not find this route!";
+        }
+        model.addAttribute("mesaj", mesaj);
+        if(mesaj.equals("Could not find this route!")) {
+            mesaj="Could not find this route!";
+            return "choosenot";
+        }
+        else {
+            mesaj = "Date of the flight is on " + date.toString() + ". " + mesaj;
+            model.addAttribute("mesaj", mesaj);
+            model.addAttribute("zbor", zborItem);
+            String dateString = date.toString();
+            return choose(zborItem,dateString,from,to);
+
+        }
+    }
+
+    @PostMapping("/choosenot")
+    public String chooseNot(){
+        return "choosenot";
+    }
+
+    @GetMapping("/users")
+    public String listUsers(Model model) {
+        List<Persoana> listUsers = persoanaService.listAll();
+        model.addAttribute("listUsers", listUsers);
+
+        return "users";
+    }
+
+    @GetMapping("/usersEdit/{id}")
+    public String editUser(@PathVariable("id") Integer id, Model model) {
+        Persoana persoana = persoanaService.getPersoana(id);
+        List<Rol> listRoles = persoanaService.listRoles();
+        model.addAttribute("persoana", persoana);
+        model.addAttribute("listRoles", listRoles);
+        return "user_form";
+    }
+
+    @PostMapping("/user/save")
+    public String savePersoana(Persoana persoana){
+        persoanaService.save(persoana);
+        return "redirect:/list_users";
+    }
+
+    @GetMapping("/adminPage")
+    public String viewAdminPage() {
+        return "adminPg";
+    }
+
+    @GetMapping("/userPage")
+    public String viewUserPage() {
+        return "userPage";
+    }
+
+    @GetMapping("/contact")
+    public String contactPage() {
+        return "contact";
+    }
+}

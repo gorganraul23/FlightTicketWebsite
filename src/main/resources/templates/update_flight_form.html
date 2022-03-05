@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="">
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Manage database</title>
+    <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+
+<div class="center1">
+    <h1>Update flight information</h1>
+    <form name="f" th:action="@{/process_update_flight}">
+
+        <div class="text-field">
+            <input type="number" th:name="id" class="form-control"
+                   required maxlength="10"/>
+            <span></span>
+            <label> Insert the flight ID</label>
+
+        </div>
+        <div class="text-field">
+            <input type="text" th:name="ora_plecare" class="form-control"
+                   maxlength="15" pattern="^(?:(?:([01]?\d|2[0-3]):)?([0-5]?\d):)?([0-5]?\d)$"/>
+            <span></span>
+            <label> New Departure Time</label>
+        </div>
+        <div class="text-field">
+            <input type="number" th:name="ore" class="form-control"
+                   maxlength="2"/>
+            <span></span>
+            <label> New Hours</label>
+        </div>
+        <div class="text-field">
+            <input type="number" th:name="minute" class="form-control"
+                   maxlength="2" max="59"/>
+            <span></span>
+            <label> New Minutes</label>
+        </div>
+        <div class="text-field">
+            <input type="number" th:name="minute" class="form-control"
+                   maxlength="2" max="59"/>
+            <span></span>
+            <label> New Price</label>
+        </div>
+        <div class="text-field">
+            <input type="text" th:name="companie" class="form-control"
+                   maxlength="20"/>
+            <span></span>
+            <label> New Company</label>
+        </div>
+        <div class="from-actions">
+            <button type="submit" class="btn">Update</button>
+        </div>
+        <div>
+            <h5>Please complete only the fields that you want to modify.</h5>
+            <h5>Please use the following format for the departure time: 12:00:00</h5>
+        </div>
+
+    </form>
+</div>
+
+</body>
+</html>

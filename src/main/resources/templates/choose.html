@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:form="http://www.w3.org/1999/html">
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Choose</title>
+    <link rel="stylesheet" href="choose.css">
+</head>
+<body>
+
+<div class="title">
+    <h1>Flights Ticket Project</h1>
+</div>
+
+<div class="choose">
+    <h1>Ticket</h1>
+    <label th:text="${mesaj}"></label>
+</div>
+
+<div class="but">
+    <form name="name" th:action="@{/search}" method="get">
+        <button type="submit" class="btn1" name="back">Go Back</button>
+    </form>
+    <form name="zbor" th:action="@{/open_ticket}" method="get" >
+
+        <button type="submit" class="btn2" name="index">Buy</button>
+    </form>
+</div>
+
+</div>
+
+</body>
+</html>
